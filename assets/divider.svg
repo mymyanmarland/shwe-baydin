@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 48" width="640" height="48" role="img" aria-label="gold star divider">
+  <defs>
+    <linearGradient id="dvL" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#fbbf24" stop-opacity="0"/>
+      <stop offset="1" stop-color="#fbbf24" stop-opacity="0.9"/>
+    </linearGradient>
+    <linearGradient id="dvR" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#fbbf24" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#fbbf24" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <style>
+    .spark { transform-box: fill-box; transform-origin: center; animation: spark 3.4s ease-in-out infinite; }
+    @keyframes spark { 0%, 100% { opacity: 0.4; transform: scale(0.75) rotate(0deg); } 50% { opacity: 1; transform: scale(1.2) rotate(25deg); } }
+    .flow { animation: flow 4s ease-in-out infinite; }
+    @keyframes flow { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+  </style>
+  <g class="flow">
+    <rect x="40" y="23" width="220" height="2.5" rx="1.2" fill="url(#dvL)"/>
+    <rect x="380" y="23" width="220" height="2.5" rx="1.2" fill="url(#dvR)"/>
+  </g>
+  <circle class="spark" style="animation-delay:-1.2s" cx="292" cy="24" r="3.5" fill="#fcd34d"/>
+  <path class="spark" transform="translate(320,24)" d="M0,-13 C1.6,-3.5 3.5,-1.6 13,0 C3.5,1.6 1.6,3.5 0,13 C-1.6,3.5 -3.5,1.6 -13,0 C-3.5,-1.6 -1.6,-3.5 0,-13 Z" fill="#fbbf24"/>
+  <circle class="spark" style="animation-delay:-2.3s" cx="348" cy="24" r="3.5" fill="#fcd34d"/>
+</svg>
