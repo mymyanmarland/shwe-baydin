@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ရွှေဗေဒင် — နေ့စဉ်ဗေဒင်</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Myanmar:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<script src="app.js"></script>
+<script>
+"use strict";
+let SIGNS = null;
+let system = localStorage.getItem("sb_system") || "day";
+
+async function init() {
+  document.getElementById("app").innerHTML = headerHTML("index.html") + `
+    <div class="hero">
+      <div class="halo">☸</div>
+      <h2 class="gold-text" data-i18n="hero_title">${t("hero_title")}</h2>
+      <p data-i18n="hero_sub">${t("hero_sub")}</p>
+    </div>
+    ${keyWarningHTML()}
+    <div class="card">
+      <div class="section-label" data-i18n="choose_system">${t("choose_system")}</div>
+      <div class="tabs">
+        <button class="tab ${system === "day" ? "active" : ""}" data-sys="day">
+          <span data-i18n="sys_day">${t("sys_day")}</span><br><small data-i18n="sys_day_sub">${t("sys_day_sub")}</small>
+        </button>
+        <button class="tab ${system === "zodiac" ? "active" : ""}" data-sys="zodiac">
+          <span data-i18n="sys_zodiac">${t("sys_zodiac")}</span><br><small data-i18n="sys_zodiac_sub">${t("sys_zodiac_sub")}</small>
+        </button>
+      </div>
+      <div class="section-label" style="margin-top:14px" data-i18n="choose_sign">${t("choose_sign")}</div>
+      <div class="grid cols-4" id="signGrid"><div class="spinner" data-i18n="loading">${t("loading")}</div></div>
+    </div>
+    <div class="card">
+      <div class="section-label" data-i18n="quick">${t("quick")}</div>
+      <div class="grid">
+        <a class="pick" href="mahabote.html" style="text-decoration:none">
+          <span class="big" data-i18n="q_mahabote">${t("q_mahabote")}</span>
+          <span class="sub" data-i18n="q_mahabote_sub">${t("q_mahabote_sub")}</span>
+        </a>
+        <a class="pick" href="dream.html" style="text-decoration:none">
+          <span class="big" data-i18n="q_dream">${t("q_dream")}</span>
+          <span class="sub" data-i18n="q_dream_sub">${t("q_dream_sub")}</span>
+        </a>
+        <a class="pick" href="ask.html" style="text-decoration:none">
+          <span class="big"><span data-i18n="q_ask">${t("q_ask")}</span><span class="beta-badge" data-i18n="advice_beta">${t("advice_beta")}</span></span>
+          <span class="sub" data-i18n="q_ask_sub">${t("q_ask_sub")}</span>
+        </a>
+        <a class="pick" href="settings.html" style="text-decoration:none">
+          <span class="big">⚙️ <span data-i18n="settings_title">${t("settings_title")}</span></span>
+          <span class="sub">Gateway API key</span>
+        </a>
+      </div>
+    </div>
+  ` + footerHTML();
+  applyI18n();
+  document.querySelectorAll(".lang-toggle button").forEach((b) => (b.onclick = () => { setLang(b.dataset.lang); location.reload(); }));
+  document.querySelectorAll("[data-sys]").forEach((b) => {
+    b.onclick = () => {
+      system = b.dataset.sys;
+      localStorage.setItem("sb_system", system);
+      document.querySelectorAll("[data-sys]").forEach((x) => x.classList.toggle("active", x === b));
+      renderGrid();
+    };
+  });
+  try {
+    SIGNS = await api("/api/signs");
+  } catch (e) {
+    document.getElementById("signGrid").innerHTML = `<p class="error">${t("err")}</p>`;
+    return;
+  }
+  renderGrid();
+  checkKey();
+}
+
+function renderGrid() {
+  const g = document.getElementById("signGrid");
+  const lang = getLang();
+  const list = system === "day" ? SIGNS.days : SIGNS.zodiacs;
+  g.innerHTML = list
+    .map((s) => {
+      const sub = system === "day"
+        ? (lang === "my" ? `စိုးမိုးဂြိုဟ် ${s.planet_my}` : `Ruled by ${s.planet_en}`)
+        : (lang === "my" ? s.dates_my : s.dates_en);
+      return `<button class="pick" data-key="${s.key}">
+        <span class="big">${lang === "my" ? s.my : s.en}</span>
+        <span class="sub">${sub}</span>
+      </button>`;
+    })
+    .join("");
+  g.querySelectorAll("[data-key]").forEach((b) => {
+    b.onclick = () => {
+      localStorage.setItem("sb_last", JSON.stringify({ system, key: b.dataset.key }));
+      location.href = `daily.html?system=${system}&key=${b.dataset.key}`;
+    };
+  });
+}
+
+document.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>

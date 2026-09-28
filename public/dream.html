@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ရွှေဗေဒင် — အိပ်မက်အဓိပ္ပာယ်</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Myanmar:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<script src="app.js"></script>
+<script>
+"use strict";
+function init() {
+  document.getElementById("app").innerHTML = headerHTML("dream.html") + `
+    <div class="hero" style="padding-top:22px">
+      <div class="halo" style="width:84px;height:84px;font-size:40px">🌙</div>
+      <h2 class="gold-text" data-i18n="dream_title">${t("dream_title")}</h2>
+      <p data-i18n="dream_sub">${t("dream_sub")}</p>
+    </div>
+    ${keyWarningHTML()}
+    <div class="card">
+      <textarea id="dream" data-i18n-ph="dream_ph" placeholder="${t("dream_ph")}"></textarea>
+      <button class="btn block" id="go" data-i18n="interpret">${t("interpret")}</button>
+      <p class="error" id="err" hidden></p>
+    </div>
+    <div id="result"></div>
+  ` + footerHTML();
+  applyI18n();
+  document.querySelectorAll(".lang-toggle button").forEach((b) => (b.onclick = () => { setLang(b.dataset.lang); location.reload(); }));
+  checkKey();
+  document.getElementById("go").onclick = async () => {
+    const err = document.getElementById("err");
+    const box = document.getElementById("result");
+    err.hidden = true;
+    const text = document.getElementById("dream").value.trim();
+    if (text.length < 4) {
+      err.hidden = false;
+      err.textContent = getLang() === "my" ? "အိပ်မက်အကြောင်း အနည်းငယ်ရေးပေးပါ" : "Please describe your dream briefly";
+      return;
+    }
+    box.innerHTML = `<div class="spinner">${t("loading")}</div>`;
+    try {
+      const d = await api("/api/dream", { method: "POST", body: JSON.stringify({ text }) });
+      box.innerHTML = `<div class="card"><div class="section-label">🔮 ${t("dream_title")}</div><p>${esc(d.interpretation).replace(/\n/g, "<br>")}</p></div>`;
+    } catch (e) {
+      box.innerHTML = "";
+      err.hidden = false;
+      err.textContent = e.code === "rate-limit" ? t("rate") : e.code === "no-key" ? t("need_key") : t("err");
+    }
+  };
+}
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+document.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>

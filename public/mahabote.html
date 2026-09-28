@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ရွှေဗေဒင် — မဟာဘုတ်</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Myanmar:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<script src="app.js"></script>
+<script>
+"use strict";
+function init() {
+  document.getElementById("app").innerHTML = headerHTML("mahabote.html") + `
+    <div class="hero" style="padding-top:22px">
+      <div class="halo" style="width:84px;height:84px;font-size:40px">🔮</div>
+      <h2 class="gold-text" data-i18n="mahabote_title">${t("mahabote_title")}</h2>
+      <p data-i18n="mahabote_sub">${t("mahabote_sub")}</p>
+    </div>
+    <div class="card">
+      <label class="field" for="year" data-i18n="birth_year">${t("birth_year")}</label>
+      <div class="keyrow">
+        <input type="number" id="year" min="1900" max="2026" placeholder="1990" inputmode="numeric">
+        <button class="btn" id="go" data-i18n="calc">${t("calc")}</button>
+      </div>
+      <p class="error" id="err" hidden></p>
+    </div>
+    <div id="result"></div>
+  ` + footerHTML();
+  applyI18n();
+  document.querySelectorAll(".lang-toggle button").forEach((b) => (b.onclick = () => { setLang(b.dataset.lang); location.reload(); }));
+  const go = async () => {
+    const err = document.getElementById("err");
+    err.hidden = true;
+    const y = Number(document.getElementById("year").value);
+    if (!Number.isInteger(y) || y < 1900 || y > 2026) {
+      err.hidden = false;
+      err.textContent = getLang() === "my" ? "သက္ကရာဇ် မှန်ကန်စွာ ထည့်ပါ (၁၉၀၀–၂၀၂၆)" : "Enter a valid year (1900–2026)";
+      return;
+    }
+    try {
+      const d = await api(`/api/mahabote?year=${y}`);
+      const lang = getLang();
+      const name = lang === "my" ? d.my : d.en;
+      const text = lang === "my" ? d.text_my : d.text_en;
+      document.getElementById("result").innerHTML = `
+        <div class="card">
+          <div class="section-label" data-i18n="your_mahabote">${t("your_mahabote")}</div>
+          <h3 class="gold-text" style="font-size:30px;margin:4px 0">${name}</h3>
+          <p>${esc(text)}</p>
+          <div class="divider"></div>
+          <div class="cycle">
+            ${d.cycle.map((c, i) => `<div class="dot ${i === d.index ? "on" : ""}">${lang === "my" ? c.my : c.en}</div>`).join("")}
+          </div>
+          <p class="hint center">${lang === "my" ? `မြန်မာသက္ကရာဇ် ${d.myanmarYear} ခုနှစ် အတွက် တွက်ချက်ထားသည်` : `Calculated for Myanmar year ${d.myanmarYear}`}</p>
+        </div>`;
+    } catch { err.hidden = false; err.textContent = t("err"); }
+  };
+  document.getElementById("go").onclick = go;
+  document.getElementById("year").addEventListener("keydown", (e) => { if (e.key === "Enter") go(); });
+}
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+document.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>

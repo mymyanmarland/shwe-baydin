@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ရွှေဗေဒင် — နေ့စဉ်ဟောစာတမ်း</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Myanmar:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<script src="app.js"></script>
+<script>
+"use strict";
+async function init() {
+  const q = new URLSearchParams(location.search);
+  let system = q.get("system");
+  let key = q.get("key");
+  if (!system || !key) {
+    try {
+      const last = JSON.parse(localStorage.getItem("sb_last") || "null");
+      if (last) { system = last.system; key = last.key; }
+    } catch {}
+  }
+  document.getElementById("app").innerHTML = headerHTML("daily.html") + `
+    <div id="content"><div class="spinner" data-i18n="loading">${t("loading")}</div></div>
+    ${keyWarningHTML()}
+  ` + footerHTML();
+  applyI18n();
+  document.querySelectorAll(".lang-toggle button").forEach((b) => (b.onclick = () => { setLang(b.dataset.lang); location.reload(); }));
+  checkKey();
+
+  const box = document.getElementById("content");
+  if (!system || !key) {
+    box.innerHTML = `<div class="card center"><p>${t("choose_sign")}</p>
+      <a class="btn" href="index.html">${t("back_home")}</a></div>`;
+    return;
+  }
+  try {
+    const d = await api(`/api/daily?system=${encodeURIComponent(system)}&key=${encodeURIComponent(key)}`);
+    const s = d.sign, r = d.reading;
+    box.innerHTML = `
+      <div class="hero" style="padding-top:22px">
+        <div class="halo" style="width:84px;height:84px;font-size:40px">📿</div>
+        <h2 class="gold-text">${s.my}</h2>
+        <p>${d.dateMy}</p>
+      </div>
+      <div class="card reading">
+        <div class="sec"><h4>${t("love")}</h4><p>${esc(r.love)}</p></div>
+        <div class="sec"><h4>${t("career")}</h4><p>${esc(r.career)}</p></div>
+        <div class="sec"><h4>${t("health")}</h4><p>${esc(r.health)}</p></div>
+        <div class="sec"><h4>${t("advice")}</h4><p>${esc(r.advice)}</p></div>
+        <div class="lucky">
+          <div class="chip"><small>${t("lucky_number")}</small><b>${esc(r.lucky_number)}</b></div>
+          <div class="chip"><small>${t("lucky_color")}</small><b>${esc(r.lucky_color)}</b></div>
+        </div>
+        <div class="btnrow">
+          <button class="btn" id="shareBtn">${t("share")}</button>
+        </div>
+        <p class="hint center" id="shareHint" hidden></p>
+      </div>
+      <div class="center"><a href="index.html" class="btn ghost">${t("back_home")}</a></div>`;
+    document.getElementById("shareBtn").onclick = async (ev) => {
+      const btn = ev.target, hint = document.getElementById("shareHint");
+      btn.disabled = true; hint.hidden = false; hint.textContent = t("loading");
+      try {
+        const url = `/api/share-card?system=${encodeURIComponent(system)}&key=${encodeURIComponent(key)}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error("card-failed");
+        const blob = await res.blob();
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = `shwe-baydin-${key}.png`;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+        hint.textContent = "✓";
+      } catch { hint.textContent = t("err"); }
+      btn.disabled = false;
+    };
+  } catch (e) {
+    box.innerHTML = `<div class="card center"><p>${e.code === "not-generated" ? t("not_generated") : t("err")}</p>
+      <a class="btn ghost" href="settings.html">${t("go_settings")}</a>
+      <div class="mt"><a href="index.html" class="btn ghost">${t("back_home")}</a></div></div>`;
+  }
+}
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+document.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>

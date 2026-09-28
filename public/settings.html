@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ရွှေဗေဒင် — ဆက်တင်များ</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Myanmar:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<script src="app.js"></script>
+<script>
+"use strict";
+async function init() {
+  document.getElementById("app").innerHTML = headerHTML("") + `
+    <div class="hero" style="padding-top:22px">
+      <div class="halo" style="width:84px;height:84px;font-size:40px">⚙️</div>
+      <h2 class="gold-text" data-i18n="settings_title">${t("settings_title")}</h2>
+    </div>
+    <div class="card">
+      <label class="field" for="baseUrl" data-i18n="gateway_url">${t("gateway_url")}</label>
+      <input type="text" id="baseUrl" autocomplete="off" spellcheck="false">
+      <label class="field" for="apiKey" data-i18n="api_key">${t("api_key")}</label>
+      <div class="keyrow">
+        <input type="password" id="apiKey" autocomplete="off" spellcheck="false" placeholder="••••••••">
+        <button class="btn ghost" id="toggleKey" type="button">👁</button>
+      </div>
+      <p class="hint" id="keyState"></p>
+      <label class="field" for="model" data-i18n="model">${t("model")}</label>
+      <select id="model"></select>
+      <p class="hint" id="ephemeral" hidden data-i18n="ephemeral_warn">${t("ephemeral_warn")}</p>
+      <div class="btnrow">
+        <button class="btn" id="save" data-i18n="save">${t("save")}</button>
+        <button class="btn ghost" id="test" data-i18n="test_conn">${t("test_conn")}</button>
+      </div>
+      <p class="ok" id="msgOk" hidden></p>
+      <p class="error" id="msgErr" hidden></p>
+    </div>
+    <div class="center"><a href="index.html" class="btn ghost" data-i18n="back_home">${t("back_home")}</a></div>
+  ` + footerHTML();
+  applyI18n();
+  document.querySelectorAll(".lang-toggle button").forEach((b) => (b.onclick = () => { setLang(b.dataset.lang); location.reload(); }));
+
+  const $ = (id) => document.getElementById(id);
+  const say = (ok, txt) => {
+    $("msgOk").hidden = !ok; $("msgErr").hidden = ok;
+    if (ok) $("msgOk").textContent = txt; else $("msgErr").textContent = txt;
+  };
+
+  $("toggleKey").onclick = () => {
+    const i = $("apiKey");
+    i.type = i.type === "password" ? "text" : "password";
+  };
+
+  try {
+    const s = await api("/api/settings");
+    $("baseUrl").value = s.baseUrl || "";
+    $("keyState").textContent = s.hasKey ? t("key_saved") : t("key_empty");
+    const st = await api("/api/status");
+    $("ephemeral").hidden = !st.ephemeralKey;
+    const sel = $("model");
+    let models = [];
+    if (s.hasKey) {
+      try { models = (await api("/api/models")).models || []; } catch { /* keep manual */ }
+    }
+    const opts = models.length ? models : [s.model, "claude-sonnet-5", "claude-opus-5", "claude-fable-5"];
+    const seen = new Set();
+    sel.innerHTML = opts.filter((m) => m && !seen.has(m) && seen.add(m))
+      .map((m) => `<option value="${m}" ${m === s.model ? "selected" : ""}>${m}</option>`).join("");
+  } catch { say(false, t("err")); }
+
+  $("save").onclick = async () => {
+    const body = { baseUrl: $("baseUrl").value.trim(), model: $("model").value };
+    if ($("apiKey").value) body.apiKey = $("apiKey").value;
+    try {
+      await api("/api/settings", { method: "POST", body: JSON.stringify(body) });
+      $("apiKey").value = "";
+      $("keyState").textContent = t("key_saved");
+      say(true, t("saved"));
+    } catch { say(false, t("err")); }
+  };
+  $("test").onclick = async () => {
+    say(true, t("testing"));
+    try {
+      const r = await api("/api/settings/test", { method: "POST" });
+      say(true, `${t("conn_ok")} (${r.count})`);
+    } catch { say(false, t("conn_fail")); }
+  };
+}
+document.addEventListener("DOMContentLoaded", init);
+</script>
+</body>
+</html>

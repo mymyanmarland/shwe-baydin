@@ -1,0 +1,1 @@
+{"dependencies":{"express":"^4.19.2"},"description":"ရွှေဗေဒင် — Burmese AI horoscope app (Tech Stack 2: Node/Express + node:sqlite + vanilla JS)","engines":{"node":">=22"},"main":"src/server.js","name":"shwe-baydin","scripts":{"generate-daily":"node scripts/generate-daily.js","start":"node src/server.js"},"type":"commonjs","version":"1.0.0"}
