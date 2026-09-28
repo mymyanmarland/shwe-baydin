@@ -47,13 +47,18 @@ async function init() {
         <p>${d.dateMy}</p>
       </div>
       <div class="card reading">
-        <div class="sec"><h4>${t("love")}</h4><p>${esc(r.love)}</p></div>
-        <div class="sec"><h4>${t("career")}</h4><p>${esc(r.career)}</p></div>
-        <div class="sec"><h4>${t("health")}</h4><p>${esc(r.health)}</p></div>
-        <div class="sec"><h4>${t("advice")}</h4><p>${esc(r.advice)}</p></div>
+        <div class="sec"><h4>${t("omen")}</h4><p>${esc(r.omen || "")}</p></div>
+        <div class="sec"><h4>${t("overall")}</h4><p>${esc(r.overall || "")}</p></div>
+        <div class="sec"><h4>${t("money")}</h4><p>${esc(r.money || r.career || "")}</p></div>
+        <div class="sec"><h4>${t("love")}</h4><p>${esc(r.love || "")}</p></div>
+        <div class="sec"><h4>${t("health")}</h4><p>${esc(r.health || "")}</p></div>
+        <div class="sec"><h4>${t("yadaya")}</h4><p>${esc(r.yadaya || "")}</p></div>
+        <div class="sec"><h4>${t("warning")}</h4><p>${esc(r.warning || "")}</p></div>
         <div class="lucky">
-          <div class="chip"><small>${t("lucky_number")}</small><b>${esc(r.lucky_number)}</b></div>
-          <div class="chip"><small>${t("lucky_color")}</small><b>${esc(r.lucky_color)}</b></div>
+          <div class="chip"><small>${t("lucky_numbers")}</small><b>${esc(r.lucky_numbers || r.lucky_number || "")}</b></div>
+          <div class="chip"><small>${t("lucky_colors")}</small><b>${esc(r.lucky_colors || r.lucky_color || "")}</b></div>
+          <div class="chip"><small>${t("lucky_direction")}</small><b>${esc(r.lucky_direction || "")}</b></div>
+          <div class="chip"><small>${t("lucky_time")}</small><b>${esc(r.lucky_time || "")}</b></div>
         </div>
         <div class="btnrow">
           <button class="btn" id="shareBtn">${t("share")}</button>

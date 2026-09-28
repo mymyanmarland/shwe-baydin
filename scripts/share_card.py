@@ -187,9 +187,9 @@ def main(argv=None) -> int:
         return (s[:cut] if cut > 0 else s[:n]).rstrip() + "…"
 
     sections = [
-        ("အချစ်ရေး", short(r.get("love", ""))),
-        ("အလုပ်/စီးပွားရေး", short(r.get("career", ""))),
-        ("ကျန်းမာရေး", short(r.get("health", ""))),
+        ("ယနေ့နိမိတ်", short(r.get("omen", ""))),
+        ("ငွေကြေး/စီးပွား", short(r.get("money", "") or r.get("career", ""))),
+        ("အချစ်/အိမ်ထောင်", short(r.get("love", ""))),
     ]
     y = 400
     for title, body in sections:
@@ -206,8 +206,8 @@ def main(argv=None) -> int:
     # ---- lucky chips (placed dynamically below the sections) ----
     chip_y = y + 22
     chips = [
-        ("ကံကောင်းဂဏန်း", r.get("lucky_number", "—")),
-        ("ကံကောင်းအရောင်", r.get("lucky_color", "—")),
+        ("အကျိုးပေးဂဏန်း", r.get("lucky_numbers", "") or r.get("lucky_number", "—")),
+        ("အကျိုးပေးအရောင်", r.get("lucky_colors", "") or r.get("lucky_color", "—")),
     ]
     chip_font_l = my_font(26)
     chip_font_v = my_font(34)

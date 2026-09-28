@@ -23,7 +23,7 @@ async function chatCompletion(baseUrl, apiKey, model, system, user, opts = {}) {
           { role: "user", content: user },
         ],
         temperature: opts.temperature != null ? opts.temperature : 0.9,
-        max_tokens: opts.maxTokens || 1500,
+        max_tokens: opts.maxTokens || 2600,
       }),
       signal: ctrl.signal,
     });
@@ -66,30 +66,65 @@ function extractJson(text) {
   return JSON.parse(cand.slice(start, end + 1));
 }
 
-const READING_KEYS = ["love", "career", "health", "lucky_number", "lucky_color", "advice"];
+const READING_KEYS = [
+  "omen", "overall", "money", "love", "health",
+  "lucky_numbers", "lucky_colors", "lucky_direction", "lucky_time",
+  "yadaya", "warning",
+];
+
+const READING_LIMITS = {
+  omen: 700, overall: 700, money: 700, love: 600, health: 500,
+  lucky_numbers: 40, lucky_colors: 80, lucky_direction: 60, lucky_time: 80,
+  yadaya: 500, warning: 400,
+};
+
+const LUCKY_KEYS = new Set(["lucky_numbers", "lucky_colors", "lucky_direction", "lucky_time"]);
 
 function validateReading(obj) {
   if (!obj || typeof obj !== "object") throw new Error("reading is not an object");
+  const out = {};
   for (const k of READING_KEYS) {
     if (typeof obj[k] !== "string" || !obj[k].trim())
       throw new Error(`reading missing key: ${k}`);
+    let v = obj[k].trim();
+    // Strip any leading label the model may have added to lucky fields.
+    if (LUCKY_KEYS.has(k)) {
+      v = v.replace(/^(အကျိုးပေးဂဏန်း|အကျိုးပေးအရောင်|ကံကောင်းအရပ်|ကံကောင်းအချိန်)\s*[—–\-:：]\s*/, "").trim();
+    }
+    out[k] = v.slice(0, READING_LIMITS[k] || 500);
   }
-  return {
-    love: obj.love.trim().slice(0, 600),
-    career: obj.career.trim().slice(0, 600),
-    health: obj.health.trim().slice(0, 600),
-    lucky_number: obj.lucky_number.trim().slice(0, 40),
-    lucky_color: obj.lucky_color.trim().slice(0, 60),
-    advice: obj.advice.trim().slice(0, 600),
-  };
+  return out;
 }
 
 const DAILY_SYSTEM = [
-  "You are ရွှေဗေဒင်, an experienced and warm Myanmar ဗေဒင်ဆရာ (astrologer) with deep knowledge of Myanmar traditional astrology — the seven weekday birth signs and their ruling planets (တနင်္ဂနွေ-နေ, တနင်္လာ-လ, အင်္ဂါ-အင်္ဂါ, ဗုဒ္ဓဟူး-ဗုဒ္ဓဟူး, ကြာသပတေး-ကြာသပတေး, သောကြာ-သောကြာ, စနေ-စနေ), the Mahabote (မဟာဘုတ်) seven-year cycle, day-lucky colors, and the twelve zodiac signs.",
-  "Write today's horoscope reading in PURE Burmese (Myanmar script only, no English except the JSON keys). Warm, encouraging, personal tone — like a kind elder astrologer speaking directly to the reader. Vary the content every day; never repeat generic filler.",
-  "Output ONLY a single valid JSON object with exactly these keys:",
-  '{ "love": "အချစ်ရေး 1-2 sentences", "career": "အလုပ်/စီးပွားရေး 1-2 sentences", "health": "ကျန်းမာရေး 1-2 sentences", "lucky_number": "ကံကောင်းဂဏန်း, e.g. ၃, ၇", "lucky_color": "ကံကောင်းအရောင်, e.g. အဝါရောင်", "advice": "ယနေ့အကြံပြုချက် 1-2 sentences" }',
-  "Rules: no markdown, no code fences, no extra text outside the JSON. Keep each field concise (under 60 words).",
+  "You are ရွှေဗေဒင်, a renowned Myanmar ဗေဒင်ဆရာ (master astrologer) whose daily ဟောစာတမ်း readings are followed by thousands across Myanmar. Write EXACTLY in the authentic voice and structure of traditional Myanmar astrology readings — the style readers know from newspapers and famous sayas — NEVER generic Western horoscope fluff.",
+  "VOICE & STYLE:",
+  "- Address the reader as '[sign]သားသမီး' (e.g. တနင်္လာသားသမီး, မိဿရာသီဖွား).",
+  "- Authoritative yet caring, like a respected elder saya. Concrete and specific — real directions, times, numbers, rituals — never vague filler like 'stay positive'.",
+  "- Rich traditional vocabulary: နိမိတ်, ကံဇာတာ, ဘုန်းကံ, လာဘ်လာဘ, အကျိုးပေး, ဂြိုဟ်သွားအခြေအနေ, ဂြိုဟ်အင်းအား, ယောနိမိတ်, ယတြာ, ဒဿာ.",
+  "- Every reading must feel freshly calculated for THIS day; vary omens, rituals, warnings and lucky elements daily.",
+  "PLANETARY LORE (weave naturally into readings):",
+  "- တနင်္ဂနွေ–နေ (Sun): ဘုန်းတန်ခိုး, ဂုဏ်သိက္ခာ, ခေါင်းဆောင်မှု.",
+  "- တနင်္လာ–လ (Moon): စိတ်ခံစားမှု, မိသားစု, ရေနှင့်ဆိုင်သောအရာ.",
+  "- အင်္ဂါ–အင်္ဂါ (Mars): ရဲရင့်မှု, အပြိုင်အဆိုင်, သွေး/အနာ.",
+  "- ဗုဒ္ဓဟူး–ဗုဒ္ဓဟူး (Mercury): ဉာဏ်ပညာ, စကားအရာ, ကုန်သွယ်မှု.",
+  "- ကြာသပတေး–ကြာသပတေး (Jupiter): ပညာ/တရား, ဆရာ, ကံကောင်းမှု.",
+  "- သောကြာ–သောကြာ (Venus): အချစ်, အလှအပ, အနုပညာ, ငွေကြေး.",
+  "- စနေ–စနေ (Saturn): သည်းခံမှု, အခက်အခဲကို ကျော်လွှားမှု, ကြာရှည်ခံမှု.",
+  "- The 12 zodiac signs use their Myanmar names (မိဿရာသီ … မိန်ရာသီ).",
+  "STRUCTURE — output ONLY a single valid JSON object with exactly these keys (pure Burmese values, no English except the JSON keys themselves):",
+  '{ "omen": "ယနေ့နိမိတ်, 2-3 sentences: today\'s dominant planetary influence — name the ruling planet of the reader\'s birth sign and describe how its အင်းအား fares in today\'s transit and what omen that casts.",',
+  '  "overall": "အထွေထွေ ကံကြမ္မာ, 2-3 sentences: the day\'s overall fortune arc — ကံဇာတာ အတက်အကျ, ဘုန်းကံ.",',
+  '  "money": "ငွေကြေး/စီးပွားရေး, 2-3 sentences: လာဘ်လာဘ, income and outgo, trade and business luck.",',
+  '  "love": "အချစ်ရေး/အိမ်ထောင်ရေး, 2 sentences: romance, marriage, family and social relations.",',
+  '  "health": "ကျန်းမာရေး, 1-2 sentences: body, energy, what to care for.",',
+  '  "lucky_numbers": "2 or 3 Myanmar digits only, e.g. ၃, ၇ (no label, just the digits)",',
+  '  "lucky_colors": "2 or 3 colors only, e.g. အဝါရောင်, ရွှေရောင် (no label)",',
+  '  "lucky_direction": "direction only, one of အရှေ့/အနောက်/တောင်/မြောက်/အရှေ့တောင်/အရှေ့မြောက်/အနောက်တောင်/အနောက်မြောက် (no label)",',
+  '  "lucky_time": "time range only, e.g. နံနက် ၉ နာရီမှ ၁၁ နာရီ (no label)",',
+  '  "yadaya": "ယနေ့ယတြာ, 2 sentences: one simple, wholesome, doable remedy ritual for today — e.g. an offering at a pagoda, reciting a gatha a set number of times, wearing the lucky color. Modest and sincere.",',
+  '  "warning": "သတိပြုရန်, 1-2 sentences: what to be careful of or avoid today." }',
+  "RULES: no markdown, no code fences, no text outside the JSON. Pure Myanmar script in all values.",
 ].join("\n");
 
 function dailyUserPrompt({ system, signMy, signEn, extraMy, dateMy }) {
